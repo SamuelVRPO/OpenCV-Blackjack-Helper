@@ -290,9 +290,6 @@ def draw_results(image, qCard):
     cv2.putText(image,(rank_name+' of'),(x-60,y-10),font,1,(0,0,0),3,cv2.LINE_AA)
     cv2.putText(image,(rank_name+' of'),(x-60,y-10),font,1,(50,200,200),2,cv2.LINE_AA)
 
-    cv2.putText(image,suit_name,(x-60,y+25),font,1,(0,0,0),3,cv2.LINE_AA)
-    cv2.putText(image,suit_name,(x-60,y+25),font,1,(50,200,200),2,cv2.LINE_AA)
-
     cv2.putText(image, 'Current Hand:', (600, 100), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
     cv2.putText(image, 'Current Hand:', (600, 100), font, 1, (50, 200, 200), 2, cv2.LINE_AA)
     
