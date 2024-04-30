@@ -85,7 +85,7 @@ while cam_quit == 0:
                 cards.append(Cards.preprocess_card(cnts_sort[i],image))
 
                 # Find the best rank and suit match for the card.
-                cards[k].best_rank_match,cards[k].best_suit_match,cards[k].rank_diff,cards[k].suit_diff = Cards.match_card(cards[k],train_ranks,train_suits)
+                cards[k].best_rank_match, cards[k].rank_diff,cards[k].suit_diff = Cards.match_card(cards[k],train_ranks,train_suits)
 
                 # Draw center point and match result on the image.
                 image = Cards.draw_results(image, cards[k])
