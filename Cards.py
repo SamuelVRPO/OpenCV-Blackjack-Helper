@@ -205,7 +205,7 @@ def preprocess_card(contour, image):
     thresh_level = white_level - CARD_THRESH
     if (thresh_level <= 0):
         thresh_level = 1
-    retval, query_thresh = cv2.threshold(Qcorner_zoom, thresh_level, 255, cv2. THRESH_BINARY_INV)
+    retval, query_thresh = cv2.threshold(Qcorner_zoom, thresh_level, 255, cv2.THRESH_BINARY_INV)
     
     # Split in to top and bottom half (top shows rank, bottom shows suit)
     Qrank = query_thresh[20:250, 0:250]
@@ -294,9 +294,9 @@ def match_card(qCard, train_ranks, train_suits):
     
 def draw_results(image, qCard):
     """Draw the card name, center point, and contour on the camera image."""
-
     x = qCard.center[0]
     y = qCard.center[1]
+
     cv2.circle(image,(x,y),5,(255,0,0),-1)
 
     rank_name = qCard.best_rank_match
@@ -308,6 +308,9 @@ def draw_results(image, qCard):
 
     cv2.putText(image,suit_name,(x-60,y+25),font,1,(0,0,0),3,cv2.LINE_AA)
     cv2.putText(image,suit_name,(x-60,y+25),font,1,(50,200,200),2,cv2.LINE_AA)
+
+    cv2.putText(image, 'Current Hand:', (600, 100), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
+    cv2.putText(image, 'Current Hand:', (600, 100), font, 1, (50, 200, 200), 2, cv2.LINE_AA)
     
     # Can draw difference value for troubleshooting purposes
     # (commented out during normal operation)
