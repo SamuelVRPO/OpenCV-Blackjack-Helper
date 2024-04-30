@@ -49,12 +49,8 @@ class Query_card:
         self.center = [] # Center point of card
         self.warp = [] # 200x300, flattened, grayed, blurred image
         self.rank_img = [] # Thresholded, sized image of card's rank
-        self.suit_img = [] # Thresholded, sized image of card's suit
         self.best_rank_match = "Unknown" # Best matched rank
-        self.best_suit_match = "Unknown" # Best matched suit
         self.rank_diff = 0 # Difference between rank image and best matched train rank image
-        self.suit_diff = 0 # Difference between suit image and best matched train suit image
-
 class Train_ranks:
     """Structure to store information about train rank images."""
 
@@ -62,12 +58,6 @@ class Train_ranks:
         self.img = [] # Thresholded, sized rank image loaded from hard drive
         self.name = "Placeholder"
 
-class Train_suits:
-    """Structure to store information about train suit images."""
-
-    def __init__(self):
-        self.img = [] # Thresholded, sized suit image loaded from hard drive
-        self.name = "Placeholder"
 
 ### Functions ###
 def load_ranks(filepath):
@@ -86,22 +76,6 @@ def load_ranks(filepath):
         i = i + 1
 
     return train_ranks
-
-def load_suits(filepath):
-    """Loads suit images from directory specified by filepath. Stores
-    them in a list of Train_suits objects."""
-
-    train_suits = []
-    i = 0
-    
-    for Suit in ['Spades','Diamonds','Clubs','Hearts']:
-        train_suits.append(Train_suits())
-        train_suits[i].name = Suit
-        filename = Suit + '.jpg'
-        train_suits[i].img = cv2.imread(filepath+filename, cv2.IMREAD_GRAYSCALE)
-        i = i + 1
-
-    return train_suits
 
 def preprocess_image(image):
     """Returns a grayed, blurred, and adaptively thresholded camera image."""
@@ -169,8 +143,7 @@ def find_cards(thresh_image):
     return cnts_sort, cnt_is_card
 
 def preprocess_card(contour, image):
-    """Uses contour to find information about the query card. Isolates rank
-    and suit images from the card."""
+    """Uses contour to find information about the query card. Isolates rank images from the card."""
 
     # Initialize new Query_card object
     qCard = Query_card()
@@ -209,9 +182,7 @@ def preprocess_card(contour, image):
     
     # Split in to top and bottom half (top shows rank, bottom shows suit)
     Qrank = query_thresh[20:250, 0:250]
-    Qsuit = query_thresh[250:510, 0:220]
-    
-    cv2.imshow('Suit', Qsuit)
+
     cv2.imshow('Rank', Qrank)
     # Find rank contour and bounding rectangle, isolate and find largest contour
     Qrank_cnts, hier = cv2.findContours(Qrank, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
@@ -225,28 +196,31 @@ def preprocess_card(contour, image):
         Qrank_sized = cv2.resize(Qrank_roi, (RANK_WIDTH,RANK_HEIGHT), 0, 0)
         qCard.rank_img = Qrank_sized
 
-    # Find suit contour and bounding rectangle, isolate and find largest contour
-    Qsuit_cnts, hier = cv2.findContours(Qsuit, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-    Qsuit_cnts = sorted(Qsuit_cnts, key=cv2.contourArea,reverse=True)
-    
-    # Find bounding rectangle for largest contour, use it to resize query suit
-    # image to match dimensions of the train suit image
-    if len(Qsuit_cnts) != 0:
-        x2,y2,w2,h2 = cv2.boundingRect(Qsuit_cnts[0])
-        Qsuit_roi = Qsuit[y2:y2+h2, x2:x2+w2]
-        Qsuit_sized = cv2.resize(Qsuit_roi, (SUIT_WIDTH, SUIT_HEIGHT), 0, 0)
-        qCard.suit_img = Qsuit_sized
-
-
     return qCard
 
-def match_card(qCard, train_ranks, train_suits):
+def match_card(qCard, train_ranks):
     """Finds best rank and suit matches for the query card. Differences
     the query card rank and suit images with the train rank and suit images.
     The best match is the rank or suit image that has the least difference."""
+    rank_value = {
+        "Ace" : 11,
+        "Two" : 2,
+        "Three" : 3,
+        "Four" : 4,
+        "Five" : 5,
+        "Six" : 6,
+        "Seven" : 7,
+        "Eight" : 8,
+        "Nine" : 9,
+        "Ten" : 10,
+        'Jack' : 10,
+        'Queen' : 10,
+        'King' : 10,
+        'Unknown' : 0
+    }
 
     best_rank_match_diff = 10000
-    best_rank_match_name = "Unknown"
+    best_rank_match_name = 'Unknown'
     i = 0
 
     # If no contours were found in query card in preprocess_card function,
@@ -264,7 +238,7 @@ def match_card(qCard, train_ranks, train_suits):
                 if rank_diff < best_rank_match_diff:
                     best_rank_diff_img = diff_img
                     best_rank_match_diff = rank_diff
-                    best_rank_name = Trank.name
+                    best_rank_name = rank_value[Trank.name]
 
 
     # Combine best rank match and best suit match to get query card's identity.
@@ -287,8 +261,8 @@ def draw_results(image, qCard):
     rank_name = qCard.best_rank_match
 
     # Draw card name twice, so letters have black outline
-    cv2.putText(image,(rank_name+' of'),(x-60,y-10),font,1,(0,0,0),3,cv2.LINE_AA)
-    cv2.putText(image,(rank_name+' of'),(x-60,y-10),font,1,(50,200,200),2,cv2.LINE_AA)
+    cv2.putText(image,(rank_name),(x-60,y-10),font,1,(0,0,0),3,cv2.LINE_AA)
+    cv2.putText(image,(rank_name),(x-60,y-10),font,1,(50,200,200),2,cv2.LINE_AA)
     
     # Can draw difference value for troubleshooting purposes
     # (commented out during normal operation)
@@ -367,3 +341,4 @@ def flattener(image, pts, w, h):
     warp = cv2.cvtColor(warp,cv2.COLOR_BGR2GRAY)
 
     return warp
+from
