@@ -18,8 +18,8 @@ BKG_THRESH = 60
 CARD_THRESH = 30
 
 # Width and height of card corner, where rank and suit are
-CORNER_WIDTH = 32
-CORNER_HEIGHT = 84
+CORNER_WIDTH = 45
+CORNER_HEIGHT = 130
 
 # Dimensions of rank train images
 RANK_WIDTH = 70
@@ -132,7 +132,7 @@ def find_cards(thresh_image):
     from largest to smallest."""
 
     # Find contours and sort their indices by contour size
-    dummy,cnts,hier = cv2.findContours(thresh_image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    cnts,hier = cv2.findContours(thresh_image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     index_sort = sorted(range(len(cnts)), key=lambda i : cv2.contourArea(cnts[i]),reverse=True)
 
     # If there are no contours, do nothing
@@ -208,11 +208,13 @@ def preprocess_card(contour, image):
     retval, query_thresh = cv2.threshold(Qcorner_zoom, thresh_level, 255, cv2. THRESH_BINARY_INV)
     
     # Split in to top and bottom half (top shows rank, bottom shows suit)
-    Qrank = query_thresh[20:185, 0:128]
-    Qsuit = query_thresh[186:336, 0:128]
-
+    Qrank = query_thresh[20:250, 0:250]
+    Qsuit = query_thresh[250:510, 0:220]
+    
+    cv2.imshow('Suit', Qsuit)
+    cv2.imshow('Rank', Qrank)
     # Find rank contour and bounding rectangle, isolate and find largest contour
-    dummy, Qrank_cnts, hier = cv2.findContours(Qrank, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    Qrank_cnts, hier = cv2.findContours(Qrank, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     Qrank_cnts = sorted(Qrank_cnts, key=cv2.contourArea,reverse=True)
 
     # Find bounding rectangle for largest contour, use it to resize query rank
@@ -224,7 +226,7 @@ def preprocess_card(contour, image):
         qCard.rank_img = Qrank_sized
 
     # Find suit contour and bounding rectangle, isolate and find largest contour
-    dummy, Qsuit_cnts, hier = cv2.findContours(Qsuit, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    Qsuit_cnts, hier = cv2.findContours(Qsuit, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     Qsuit_cnts = sorted(Qsuit_cnts, key=cv2.contourArea,reverse=True)
     
     # Find bounding rectangle for largest contour, use it to resize query suit
@@ -234,6 +236,7 @@ def preprocess_card(contour, image):
         Qsuit_roi = Qsuit[y2:y2+h2, x2:x2+w2]
         Qsuit_sized = cv2.resize(Qsuit_roi, (SUIT_WIDTH, SUIT_HEIGHT), 0, 0)
         qCard.suit_img = Qsuit_sized
+
 
     return qCard
 
