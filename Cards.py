@@ -49,7 +49,7 @@ class Query_card:
         self.center = [] # Center point of card
         self.warp = [] # 200x300, flattened, grayed, blurred image
         self.rank_img = [] # Thresholded, sized image of card's rank
-        self.best_rank_match = "Unknown" # Best matched rank
+        self.best_rank_match = 0 # Best matched rank
         self.rank_diff = 0 # Difference between rank image and best matched train rank image
 class Train_ranks:
     """Structure to store information about train rank images."""
@@ -220,7 +220,7 @@ def match_card(qCard, train_ranks):
     }
 
     best_rank_match_diff = 10000
-    best_rank_match_name = 'Unknown'
+    best_rank_match_name = 0
     i = 0
 
     # If no contours were found in query card in preprocess_card function,
@@ -261,8 +261,8 @@ def draw_results(image, qCard):
     rank_name = qCard.best_rank_match
 
     # Draw card name twice, so letters have black outline
-    cv2.putText(image,(rank_name),(x-60,y-10),font,1,(0,0,0),3,cv2.LINE_AA)
-    cv2.putText(image,(rank_name),(x-60,y-10),font,1,(50,200,200),2,cv2.LINE_AA)
+    cv2.putText(image,(str(rank_name)),(x-60,y-10),font,1,(0,0,0),3,cv2.LINE_AA)
+    cv2.putText(image,(str(rank_name)),(x-60,y-10),font,1,(50,200,200),2,cv2.LINE_AA)
 
     
     # Can draw difference value for troubleshooting purposes
@@ -273,6 +273,43 @@ def draw_results(image, qCard):
     #cv2.putText(image,s_diff,(x+20,y+50),font,0.5,(0,0,255),1,cv2.LINE_AA)
 
     return image
+
+def draw_hand(image, cards):
+    hand_total = 0
+    for card in cards:
+        hand_total += card.best_rank_match
+    
+
+
+
+    if hand_total > 21:
+        while hand_total > 21:
+            aceChanged = False
+            for card in cards:
+                if card.best_rank_match == 11:
+                    card.best_rank_match = 1
+                    hand_total -= 10
+                    aceChanged = True
+                    break
+            if not aceChanged:
+                cv2.putText(image,(f"You Lose!"),(800, 100),font,1,(0,0,0),3,cv2.LINE_AA)
+                cv2.putText(image,(f"You Lose!"),(800, 100),font,1,(50,200,200),2,cv2.LINE_AA)
+                break
+    if len(cards) >= 5 and hand_total <= 21:
+        cv2.putText(image,(f"Suggestion: Stay"),(800, 100),font,1,(0,0,0),3,cv2.LINE_AA)
+        cv2.putText(image,(f"Suggestion: Stay"),(800, 100),font,1,(50,200,200),2,cv2.LINE_AA)
+    elif hand_total < 17:
+        cv2.putText(image,(f"Suggestion: Hit"),(800, 100),font,1,(0,0,0),3,cv2.LINE_AA)
+        cv2.putText(image,(f"Suggestion: Hit"),(800, 100),font,1,(50,200,200),2,cv2.LINE_AA)
+    elif hand_total >= 17 and hand_total <= 21:
+        cv2.putText(image,(f"Suggestion: Stay"),(800, 100),font,1,(0,0,0),3,cv2.LINE_AA)
+        cv2.putText(image,(f"Suggestion: Stay"),(800, 100),font,1,(50,200,200),2,cv2.LINE_AA)
+
+    cv2.putText(image,(f"Current hand: {hand_total}"),(350, 100),font,1,(0,0,0),3,cv2.LINE_AA)
+    cv2.putText(image,(f"Current hand: {hand_total}"),(350, 100),font,1,(50,200,200),2,cv2.LINE_AA)
+    return image
+
+
 
 def flattener(image, pts, w, h):
     """Flattens an image of a card into a top-down 200x300 perspective.
@@ -342,4 +379,3 @@ def flattener(image, pts, w, h):
     warp = cv2.cvtColor(warp,cv2.COLOR_BGR2GRAY)
 
     return warp
-from
