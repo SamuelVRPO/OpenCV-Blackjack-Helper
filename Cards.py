@@ -246,15 +246,13 @@ def match_card(qCard, train_ranks, train_suits):
     The best match is the rank or suit image that has the least difference."""
 
     best_rank_match_diff = 10000
-    best_suit_match_diff = 10000
     best_rank_match_name = "Unknown"
-    best_suit_match_name = "Unknown"
     i = 0
 
     # If no contours were found in query card in preprocess_card function,
     # the img size is zero, so skip the differencing process
     # (card will be left as Unknown)
-    if (len(qCard.rank_img) != 0) and (len(qCard.suit_img) != 0):
+    if len(qCard.rank_img) != 0:
         
         # Difference the query card rank image from each of the train rank images,
         # and store the result with the least difference
@@ -268,16 +266,6 @@ def match_card(qCard, train_ranks, train_suits):
                     best_rank_match_diff = rank_diff
                     best_rank_name = Trank.name
 
-        # Same process with suit images
-        for Tsuit in train_suits:
-                
-                diff_img = cv2.absdiff(qCard.suit_img, Tsuit.img)
-                suit_diff = int(np.sum(diff_img)/255)
-                
-                if suit_diff < best_suit_match_diff:
-                    best_suit_diff_img = diff_img
-                    best_suit_match_diff = suit_diff
-                    best_suit_name = Tsuit.name
 
     # Combine best rank match and best suit match to get query card's identity.
     # If the best matches have too high of a difference value, card identity
@@ -285,11 +273,8 @@ def match_card(qCard, train_ranks, train_suits):
     if (best_rank_match_diff < RANK_DIFF_MAX):
         best_rank_match_name = best_rank_name
 
-    if (best_suit_match_diff < SUIT_DIFF_MAX):
-        best_suit_match_name = best_suit_name
-
     # Return the identiy of the card and the quality of the suit and rank match
-    return best_rank_match_name, best_suit_match_name, best_rank_match_diff, best_suit_match_diff
+    return best_rank_match_name,best_rank_match_diff
     
     
 def draw_results(image, qCard):
@@ -300,7 +285,6 @@ def draw_results(image, qCard):
     cv2.circle(image,(x,y),5,(255,0,0),-1)
 
     rank_name = qCard.best_rank_match
-    suit_name = qCard.best_suit_match
 
     # Draw card name twice, so letters have black outline
     cv2.putText(image,(rank_name+' of'),(x-60,y-10),font,1,(0,0,0),3,cv2.LINE_AA)
@@ -387,7 +371,5 @@ def flattener(image, pts, w, h):
     M = cv2.getPerspectiveTransform(temp_rect,dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     warp = cv2.cvtColor(warp,cv2.COLOR_BGR2GRAY)
-
-        
 
     return warp
