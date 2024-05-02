@@ -1,7 +1,5 @@
 ############## Playing Card Detector Functions ###############
 #
-# Author: Evan Juras
-# Date: 9/5/17
 # Description: Functions and classes for CardDetector.py that perform 
 # various steps of the card detection algorithm
 
@@ -264,23 +262,12 @@ def draw_results(image, qCard):
     cv2.putText(image,(str(rank_name)),(x-60,y-10),font,1,(0,0,0),3,cv2.LINE_AA)
     cv2.putText(image,(str(rank_name)),(x-60,y-10),font,1,(50,200,200),2,cv2.LINE_AA)
 
-    
-    # Can draw difference value for troubleshooting purposes
-    # (commented out during normal operation)
-    #r_diff = str(qCard.rank_diff)
-    #s_diff = str(qCard.suit_diff)
-    #cv2.putText(image,r_diff,(x+20,y+30),font,0.5,(0,0,255),1,cv2.LINE_AA)
-    #cv2.putText(image,s_diff,(x+20,y+50),font,0.5,(0,0,255),1,cv2.LINE_AA)
-
     return image
 
 def draw_hand(image, cards):
     hand_total = 0
     for card in cards:
         hand_total += card.best_rank_match
-    
-
-
 
     if hand_total > 21:
         while hand_total > 21:
