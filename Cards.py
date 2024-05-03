@@ -1,37 +1,26 @@
-############## Playing Card Detector Functions ###############
-#
-# Description: Functions and classes for CardDetector.py that perform 
-# various steps of the card detection algorithm
 
 
 # Import necessary packages
 import numpy as np
 import cv2
 import time
+from enum import Enum
 
-### Constants ###
+class Thresholds(Enum):
+    BKG_THRESH = 60
+    CARD_THRESH = 30
 
-# Adaptive threshold levels
-BKG_THRESH = 60
-CARD_THRESH = 30
+class CardDimensions(Enum):
+    CORNER_WIDTH = 45
+    CORNER_HEIGHT = 130
+    RANK_WIDTH = 70
+    RANK_HEIGHT = 125
 
-# Width and height of card corner, where rank and suit are
-CORNER_WIDTH = 45
-CORNER_HEIGHT = 130
+class MaxDifferences(Enum):
+    RANK_DIFF_MAX = 2000
+    CARD_MAX_AREA = 120000
+    CARD_MIN_AREA = 2500
 
-# Dimensions of rank train images
-RANK_WIDTH = 70
-RANK_HEIGHT = 125
-
-# Dimensions of suit train images
-SUIT_WIDTH = 70
-SUIT_HEIGHT = 100
-
-RANK_DIFF_MAX = 2000
-SUIT_DIFF_MAX = 700
-
-CARD_MAX_AREA = 120000
-CARD_MIN_AREA = 25000
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -59,8 +48,8 @@ class Train_ranks:
 
 ### Functions ###
 def load_ranks(filepath):
-    """Loads rank images from directory specified by filepath. Stores
-    them in a list of Train_ranks objects."""
+    """This function loads images representing ranks from a directory specified by a file path.
+    It then organizes these images into a list of objects belonging to the Train_ranks class"""
 
     train_ranks = []
     i = 0
@@ -81,27 +70,27 @@ def preprocess_image(image):
     gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray,(5,5),0)
 
-    # The best threshold level depends on the ambient lighting conditions.
-    # For bright lighting, a high threshold must be used to isolate the cards
-    # from the background. For dim lighting, a low threshold must be used.
-    # To make the card detector independent of lighting conditions, the
-    # following adaptive threshold method is used.
-    #
-    # A background pixel in the center top of the image is sampled to determine
-    # its intensity. The adaptive threshold is set at 50 (THRESH_ADDER) higher
-    # than that. This allows the threshold to adapt to the lighting conditions.
+    # The optimal threshold level varies based on the surrounding lighting conditions.
+    # In bright environments, a higher threshold is necessary to distinguish cards from the background,
+    # while dim lighting requires a lower threshold.
+    # To ensure the card detector functions consistently regardless of lighting,
+    # an adaptive thresholding approach is employed.
+    # This method involves sampling the intensity of a background pixel at the center top of the image
+    # and setting the adaptive threshold slightly higher (50 units) than that intensity value.
+    # This adjustment enables the threshold to adapt to changes in lighting conditions.
+
     img_w, img_h = np.shape(image)[:2]
     bkg_level = gray[int(img_h/100)][int(img_w/2)]
-    thresh_level = bkg_level + BKG_THRESH
+    thresh_level = bkg_level + Thresholds.BKG_THRESH.value
 
     retval, thresh = cv2.threshold(blur,thresh_level,255,cv2.THRESH_BINARY)
     
     return thresh
 
 def find_cards(thresh_image):
-    """Finds all card-sized contours in a thresholded camera image.
-    Returns the number of cards, and a list of card contours sorted
-    from largest to smallest."""
+    """Find all contours in a thresholded camera image that are approximately the size of cards.
+   Return the count of cards and a list of card contours sorted from largest to smallest."""
+
 
     # Find contours and sort their indices by contour size
     cnts,hier = cv2.findContours(thresh_image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
@@ -116,25 +105,26 @@ def find_cards(thresh_image):
     hier_sort = []
     cnt_is_card = np.zeros(len(cnts),dtype=int)
 
-    # Fill empty lists with sorted contour and sorted hierarchy. Now,
+    # Populate empty lists with sorted contour and sorted hierarchy. Now,
     # the indices of the contour list still correspond with those of
     # the hierarchy list. The hierarchy array can be used to check if
     # the contours have parents or not.
+
     for i in index_sort:
         cnts_sort.append(cnts[i])
         hier_sort.append(hier[0][i])
 
-    # Determine which of the contours are cards by applying the
-    # following criteria: 1) Smaller area than the maximum card size,
-    # 2), bigger area than the minimum card size, 3) have no parents,
-    # and 4) have four corners
+    # Identify contours as potential cards based on the following conditions:
+    # 1) Their area is smaller than the maximum card size,
+    # 2) Their area is larger than the minimum card size,
+    # 3) They have no parent contours, and 4) They possess four corners.
 
     for i in range(len(cnts_sort)):
         size = cv2.contourArea(cnts_sort[i])
         peri = cv2.arcLength(cnts_sort[i],True)
         approx = cv2.approxPolyDP(cnts_sort[i],0.01*peri,True)
         
-        if ((size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
+        if ((size < MaxDifferences.CARD_MAX_AREA.value) and (size > MaxDifferences.CARD_MIN_AREA).value
             and (hier_sort[i][3] == -1) and (len(approx) == 4)):
             cnt_is_card[i] = 1
 
@@ -168,12 +158,12 @@ def preprocess_card(contour, image):
     qCard.warp = flattener(image, pts, w, h)
 
     # Grab corner of warped card image and do a 4x zoom
-    Qcorner = qCard.warp[0:CORNER_HEIGHT, 0:CORNER_WIDTH]
+    Qcorner = qCard.warp[0:CardDimensions.CORNER_HEIGHT.value, 0:CardDimensions.CORNER_WIDTH.value]
     Qcorner_zoom = cv2.resize(Qcorner, (0,0), fx=4, fy=4)
 
     # Sample known white pixel intensity to determine good threshold level
-    white_level = Qcorner_zoom[15,int((CORNER_WIDTH*4)/2)]
-    thresh_level = white_level - CARD_THRESH
+    white_level = Qcorner_zoom[15,int((CardDimensions.CORNER_WIDTH.value*4)/2)]
+    thresh_level = white_level - Thresholds.CARD_THRESH.value
     if (thresh_level <= 0):
         thresh_level = 1
     retval, query_thresh = cv2.threshold(Qcorner_zoom, thresh_level, 255, cv2.THRESH_BINARY_INV)
@@ -191,15 +181,14 @@ def preprocess_card(contour, image):
     if len(Qrank_cnts) != 0:
         x1,y1,w1,h1 = cv2.boundingRect(Qrank_cnts[0])
         Qrank_roi = Qrank[y1:y1+h1, x1:x1+w1]
-        Qrank_sized = cv2.resize(Qrank_roi, (RANK_WIDTH,RANK_HEIGHT), 0, 0)
+        Qrank_sized = cv2.resize(Qrank_roi, (CardDimensions.RANK_WIDTH.value,CardDimensions.RANK_HEIGHT.value), 0, 0)
         qCard.rank_img = Qrank_sized
 
     return qCard
 
 def match_card(qCard, train_ranks):
-    """Finds best rank and suit matches for the query card. Differences
-    the query card rank and suit images with the train rank and suit images.
-    The best match is the rank or suit image that has the least difference."""
+    """Identifies the optimal rank  matches for the query card by comparing the rank  images of the query card with those of the train rank images. T
+    he most suitable match is determined by selecting the rank or suit image with the lowest difference."""
     rank_value = {
         "Ace" : 11,
         "Two" : 2,
@@ -225,9 +214,10 @@ def match_card(qCard, train_ranks):
     # the img size is zero, so skip the differencing process
     # (card will be left as Unknown)
     if len(qCard.rank_img) != 0:
-        
-        # Difference the query card rank image from each of the train rank images,
-        # and store the result with the least difference
+
+        # Calculate the difference between the rank image of the query card and each of the train rank images,
+        # and retain the result with the minimum difference.
+
         for Trank in train_ranks:
 
                 diff_img = cv2.absdiff(qCard.rank_img, Trank.img)
@@ -242,7 +232,7 @@ def match_card(qCard, train_ranks):
     # Combine best rank match and best suit match to get query card's identity.
     # If the best matches have too high of a difference value, card identity
     # is still Unknown
-    if (best_rank_match_diff < RANK_DIFF_MAX):
+    if (best_rank_match_diff < MaxDifferences.RANK_DIFF_MAX.value):
         best_rank_match_name = best_rank_name
 
     # Return the identiy of the card and the quality of the suit and rank match
@@ -299,9 +289,10 @@ def draw_hand(image, cards):
 
 
 def flattener(image, pts, w, h):
-    """Flattens an image of a card into a top-down 200x300 perspective.
-    Returns the flattened, re-sized, grayed image.
-    See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
+    """Transforms an image of a card into a top-down perspective with dimensions of 200x300.
+Provides the transformed, resized, and grayscale image.
+Refer to www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/ for more details."""
+
     temp_rect = np.zeros((4,2), dtype = "float32")
     
     s = np.sum(pts, axis = 2)
