@@ -1,6 +1,6 @@
 # OpenCV-Blackjack-Helper
 This program is based on a card detection program by [EdjeElectronics](https://github.com/EdjeElectronics). 
-The program was meaningfully modified to fit our requirements, but the underlying logic is attributed to EdjeElectronics.
+The program was meaningfully modified to fit our requirements, but the underlying logic is attributed to him.
 This is a Python program that uses OpenCV to detect and identify playing cards from a Camera video feed.
 
 ## Usage
